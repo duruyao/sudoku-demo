@@ -1,8 +1,8 @@
-# Sudoku Algorithm & Demo
+# Sudoku Algorithm & Demo 
 
 ![64x64_sudoku_img.png](./img/64x64_sudoku_img.png)
 
-## Directionty
+## Directory
 
 ```shell
 .
