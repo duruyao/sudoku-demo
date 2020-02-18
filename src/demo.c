@@ -16,8 +16,16 @@
 #include "sudoku.h"
 
 int main(int argc, char **argv) {
-    int N = 64;
+    int N = 9;
+    int valid = 0;
     uint8_t **arr = NULL;
+
+    N = atoi(argv[1]);
+    for (int i = 1; !valid && i <= N; i++)
+        if (i * i == N)
+            valid = 1;
+    if (!valid)
+        return 1;
 
     arr = (uint8_t **)malloc(sizeof(uint8_t *) *N);
     for (int i = 0; i < N; i++) {
