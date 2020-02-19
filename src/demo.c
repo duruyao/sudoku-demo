@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
         if ((ret = output_sudo(sudo, output)) < 0)
             goto end;
-        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n", N, N, outfile);
+        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
         
         if ((ret = output_sudo(sudo, stdout)) < 0)
             goto end;
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
         if ((ret = init_sudo(&sudo, &N, input)) < 0)
             goto end;
 
-        fprintf(stdout, "Read %d x %d sudoku from '%s'\n", N, N, infile);
+        fprintf(stdout, "Read %d x %d sudoku from '%s'\n\n", N, N, infile);
         if ((ret = output_sudo(sudo, stdout)) < 0)
             goto end;
         
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 
         if ((ret = output_sudo(sudo, output)) < 0)
             goto end;
-        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n", N, N, outfile);
+        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
         
         if ((ret = output_sudo(sudo, stdout)) < 0)
             goto end;
