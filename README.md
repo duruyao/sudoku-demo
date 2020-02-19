@@ -11,7 +11,7 @@
 ├── data
 │   ├── input.txt
 │   └── output.txt
-├── demo
+├── run
 ├── img
 │   └── 64x64_sudoku_img.png
 ├── Makefile
@@ -34,7 +34,7 @@ Generate N x N randomly ordered sudoku by using `./demo <N>`, and make sure that
 **e.g.**
 
 ```shell
-$ ./demo 4
+$ ./run 4
 Generate 4 x 4 sudoku to 'data/output.txt'
 
  2 4 | 1 3
@@ -45,7 +45,7 @@ Generate 4 x 4 sudoku to 'data/output.txt'
 ```
 
 ```shell
-$ ./demo 9
+$ ./run 9
 Generate 9 x 9 sudoku to 'data/output.txt'
 
  5 4 9 | 8 2 7 | 1 6 3
@@ -62,7 +62,7 @@ Generate 9 x 9 sudoku to 'data/output.txt'
 ```
 
 ```shell
-$ ./demo 25
+$ ./run 25
 Generate 25 x 25 sudoku to 'data/output.txt'
 
  10 15  2 12 |  6 11 14  3 | 13  9 16  4 |  5  8  7  1
@@ -93,20 +93,20 @@ Before solve `N` x `N` sudoku, make sure that your input data is in './data/inpu
 After executing the command, the result of solving sudoku is in './data/output.txt' if it is existed.
 
 ```shell
-$ ./demo
+$ ./run
 Read 9 x 9 sudoku from 'data/input.txt'
 
  5 4   | 8 2   | 1 6  
-       |   4   | 8   7
+       |   4   |     7
    2 7 | 1   3 | 5 4 9
 -------+-------+-------
- 4 5 1 | 7   2 | 9 3  
-   3 6 |       | 7   2
- 7   2 | 9 3   | 4   1
+ 4   1 | 7   2 | 9 3  
+   3   |       | 7   2
+ 7   2 | 9     | 4   1
 -------+-------+-------
- 6   5 | 2   8 |     4
-   1 4 |   9   | 2   8
- 2 7   | 3 1 4 |   9 5
+ 6   5 | 2   8 |     
+     4 |   9   | 2   
+ 2 7   | 3   4 |   9 5
 Generate 9 x 9 sudoku to 'data/output.txt'
 
  5 4 9 | 8 2 7 | 1 6 3

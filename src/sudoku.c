@@ -55,16 +55,11 @@ static const int POSS[] =  {0,      /* 000000000 */
 /******************************************************************************/
 
 
-struct status {
-    uint8_t  nb;
-    uint64_t poss;
-};
-
 struct sudoku {
-    unsigned  size;
-    unsigned  nb_data;
-    uint8_t **data;
-    struct status **stat;
+    unsigned   size;         /* number of rows                               */
+    unsigned   nb_data;      /* number of cells that is not empty            */
+    int8_t   **data;         /* 2-D array to store numeric of every cell     */
+    uint64_t **stat;         /* 2-D array to store status of possibilities   */
 };
 
 
@@ -97,17 +92,22 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
     int ret   = 0;
     int valid = 0;
     int N     = *N_p;
-    Sudoku   *sudo = NULL;
-    uint8_t **data = NULL;
+    int n     = sqrt(N);
+    Sudoku   *sudo  = NULL;
+    int8_t   **data = NULL;
+    uint64_t **stat = NULL;
+    int8_t     num  = 0;
+    uint64_t   poss = 0;
 
     for (int i = 1; !valid && i <= N; i++)
         if (i * i == N)
             valid = 1;
     if (!valid && !input) {
-        return -2;
         fprintf(stderr, "Invalid parameter (%d is not a power of 2)\n", N);
+        return -2;
     }
 
+    /* allocate Sudoku type data */
     if ((sudo = (Sudoku *)malloc(sizeof(Sudoku) * 1)) == NULL) {
         fprintf(stderr, "Error allocating memory\n");
         ret = -1;
@@ -122,19 +122,20 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
         }
     }
 
-    if ((data = (uint8_t **)malloc(sizeof(uint8_t *) * N)) == NULL) {
+    /* allocate and initialize 2-D array to store data */
+    if ((data = (int8_t **)malloc(sizeof(int8_t *) * N)) == NULL) {
         fprintf(stderr, "Error allocating memory\n");
         ret = -1;
         goto fail;
     }
     
     for (int i = 0; i < N; i++) {
-        if ((data[i] = (uint8_t *)malloc(sizeof(uint8_t) * N)) == NULL) {
+        if ((data[i] = (int8_t *)malloc(sizeof(int8_t) * N)) == NULL) {
             fprintf(stderr, "Error allocating memory\n");
             ret = -1;
             goto fail;
         }
-        memset(data[i], 0, sizeof(uint8_t) * N);
+        memset(data[i], 0, sizeof(int8_t) * N);
     }
 
     *sudo_pp      = sudo;
@@ -146,6 +147,71 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
     if (input == NULL)
         return 0;
 
+    /* allocate and initialize 2-D array as status table */
+    if ((stat = (uint64_t **)malloc(sizeof(uint64_t *) * N)) == NULL) {
+        fprintf(stderr, "Error allocating memory\n");
+        ret = -1;
+        goto fail;
+    }
+    
+    for (int i = 0; i < N; i++) {
+        if ((stat[i] = (uint64_t *)malloc(sizeof(uint64_t) * N)) == NULL) {
+            fprintf(stderr, "Error allocating memory\n");
+            ret = -1;
+            goto fail;
+        }
+        for (int j = 0; j < N; j++) {
+            stat[i][j] = pow(2, N) - 1;
+        }
+    }
+    sudo->stat = stat;
+
+    /* read data from input file and set status table */
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (fscanf(input, "%" SCNd8 "", &num) == EOF) {
+                fprintf(stderr, "Error reading input file\n");
+                ret = -1;
+                goto fail;
+            }
+            data[i][j] = 0 - num;
+            if (data[i][j] < 0) {
+                sudo->nb_data++;
+                poss = (uint64_t)pow(2, num - 1);
+                stat[i][j] = poss;
+
+                /* remove the possibility from current row and column */
+                for (int k = N; k--; ) {
+                    /* error: valid sudoku */
+                    if ((data[i][j] == data[i][k] && j != k) || 
+                            (data[i][j] == data[k][j] && i != k)) {
+                        fprintf(stderr,
+                                "Invalid data found (%d,%d) (%d,%d)  (%d,%d)\n",
+                                i, j, i, k, k, j);
+                        ret = -1;
+                        goto fail;
+                    }
+                    stat[i][k] &= (~poss);
+                    stat[k][j] &= (~poss);
+                }
+                
+                /* remove the possibility from current n*n subsquares */
+                for (int x = i - (i % n); x < i - (i % n) + n; x++) {
+                    for (int y = j - (j % n); y < j - (j % n) + n; y++) {
+                        /* error: valid sudoku */
+                        if ((x != i || y != j) && data[x][y] == data[i][j]) {
+                            fprintf(stderr,
+                                    "Invalid data found (%d,%d) (%d,%d)\n",
+                                    i, j, x, y);
+                            ret = -1;
+                            goto fail;
+                        }
+                        stat[x][y] &= (~poss);
+                    }
+                }
+            }
+        }
+    }
 
 
 fail:
@@ -154,8 +220,15 @@ fail:
             free(sudo);
         if (data) {
             for (int i = 0; data[i] && i < N; i++)
-                if(data[N]) free(data[N]);
+                if (data[i])
+                    free(data[i]);
             free(data);
+        }
+        if (stat) {
+            for (int i = 0; stat[i] && i < N; i++)
+                if (stat[i])
+                    free(stat[i]);
+            free(stat);
         }
     }
 
@@ -218,7 +291,7 @@ int output_sudo(Sudoku *sudo, FILE *output) {
     int  nb_bit = 0;        /* number of bits of decimal of the N */
     char fmt[8] = {'\0'};
     char str[8] = {'\0'};
-    uint8_t **data = sudo->data;
+    int8_t **data = sudo->data;
 
     if (!data) {
         fprintf(stderr, "Data buffer of sudoku is empry\n");
@@ -240,7 +313,7 @@ int output_sudo(Sudoku *sudo, FILE *output) {
         }
 
         for (int j = 0; j < N; j++) {
-            snprintf(str, 8, fmt, (unsigned)data[i][j]);
+            snprintf(str, 8, fmt, (unsigned)abs(data[i][j]));
             if (j != 0 && j % n == 0) {
                 fprintf(output, " | %s", str);
             } else {
@@ -264,18 +337,18 @@ int output_sudo(Sudoku *sudo, FILE *output) {
  */
 
 int gen_sudo(Sudoku *sudo) {
-    int      ret   = 0;
-    int      N     = sudo->size;
-    uint8_t *q     = NULL; 
-    uint8_t *que   = NULL; 
-    uint8_t **data = sudo->data;
+    int     ret   = 0;
+    int     N     = sudo->size;
+    int8_t *q     = NULL; 
+    int8_t *que   = NULL; 
+    int8_t **data = sudo->data;
     
     if (data == NULL) {
         fprintf(stderr, "Data buffer of sudoku is empry\n");
         return -1;
     }
 
-    que = (uint8_t *)malloc(sizeof(uint8_t) * N);
+    que = (int8_t *)malloc(sizeof(int8_t) * N);
     if (que == NULL) {
         fprintf(stderr, "Error allocating memory\n");
         return -1;
@@ -324,7 +397,7 @@ int gen_sudo(Sudoku *sudo) {
  *
  */
 
-int dfs_gen(uint8_t **data, int sub, uint8_t numeric, int N) {
+int dfs_gen(int8_t **data, int sub, int8_t numeric, int N) {
     if (sub == N)
         return 1;
     int ret = 0;
@@ -356,77 +429,13 @@ int dfs_gen(uint8_t **data, int sub, uint8_t numeric, int N) {
     return ret;
 }
 
-int init_stat_tab(uint8_t **arr, int **tab, int N) {
-    int n    = sqrt(N);
-    int poss = 0;
-
-    /* tanslate input array to sudoku status table */
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            if (arr[i][j] = 0)
-                tab[i][j] = POSS[10];
-            else
-                tab[i][j] = 0 - arr[i][j];
-        }
-    }
-
-    /* initialize sudoku status table */
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            if (tab[i][j] < 0) {
-                poss = POSS[0 - tab[i][j]];
-
-                /* remove the possibility from current row and column */
-                for (int k = 0; k < N; k++) {
-                    if (tab[i][k] > 0)
-                        tab[i][k] = tab[i][k] & (~poss);
-                    /* error: invalid sudoku */
-                    else if (k != j && tab[i][k] == tab[i][j])
-                        return -1;
-                    else if (tab[i][k] == 0)
-                        return -2;
-
-                    if (tab[k][j] > 0)
-                        tab[k][j] = tab[k][j] & (~poss);
-                    /* error: valid sudoku */
-                    else if (k != i && tab[k][j] == tab[i][j])
-                        return -1;
-                    else if (tab[k][j] == 0)
-                        return -2;
-                }
-
-                /* remove the possibility from current n*n subsquares */
-                for (int x = i - (i % n); x < i - (i % n) + n; x++) {
-                    for (int y = j - (j % n); y < j - (j % n) + n; j++) {
-                        if (tab[x][y] > 0)
-                            tab[x][y] = tab[x][y] & (~poss);
-                        /* error: valid sudoku */
-                        else if ((x != i || y != j) && tab[x][y] == tab[i][i])
-                            return -1;
-                    }
-                }
-            }
-        }
-    }
-    return 0;
-}
-
 int solve_sudo(Sudoku *sudo) {
-    int   N   = sudo->size;
-    int   ret = 0;
-    int **tab = NULL;
-    uint8_t **data = sudo->data;
-    // if ((tab = (int **)malloc(sizeof(int *) * N)) == NULL)
-    //     return -1;
-    // for (int i = 0; i < N; i++)
-    //     if ((tab[i] = (int *)malloc(sizeof(int) * N)) == NULL)
-    //         return -1;
-    // if ((ret = init_stat_tab(arr, tab, N)) < 0)
-    //     goto end;
+    int        N    = sudo->size;
+    int        ret  = 0;
+    int8_t   **data = sudo->data;
+    uint64_t **stat = sudo->stat;
 
 end:
-    // while (N--) free(tab[N]);
-    // free(tab);
     return ret;
 }
 

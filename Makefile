@@ -1,6 +1,6 @@
 ./bin/demo: ./obj/demo.o ./obj/sudoku.o
 	gcc ./obj/demo.o ./obj/sudoku.o -o ./bin/demo -lm
-	cp ./bin/demo demo
+	cp ./bin/demo run
 
 ./obj/demo.o: ./src/demo.c
 	gcc -c ./src/demo.c -o ./obj/demo.o -g

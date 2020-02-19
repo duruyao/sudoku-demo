@@ -21,11 +21,26 @@ extern "C" {
 /*                                                                            */
 /******************************************************************************/
 
-struct status;
-typedef struct status Status;
-
 struct sudoku;
 typedef struct sudoku Sudoku;
+
+
+/******************************************************************************/
+/*                                                                            */
+/* macro defination                                                           */
+/*                                                                            */
+/******************************************************************************/
+
+
+#define NB_1(u) ({                                      \
+    uint64_t _u_ = (uint64_t)(u);                       \
+    uint8_t  cnt = 0;                                   \
+    while (_u_) {                                       \
+        (_u_) &= (_u_ - 1);                             \
+        cnt++;                                          \
+    }                                                   \
+    cnt;                                                \
+})
 
 
 /******************************************************************************/
@@ -43,7 +58,7 @@ extern int  output_sudo     (Sudoku *, FILE *);
 
 extern int  gen_sudo        (Sudoku *);
 
-extern int  dfs_gen         (uint8_t **, int, uint8_t, int);
+extern int  dfs_gen         (int8_t **, int, int8_t, int);
 
 extern int  solve_sudo      (Sudoku *);
 

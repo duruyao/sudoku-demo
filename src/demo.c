@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     FILE   *output  = NULL;
     char   *infile  = "data/input.txt";
     char   *outfile = "data/output.txt";
-    
+
     if (argc > 2) {
         fprintf(stderr,
                 "Usage:\n"
@@ -59,6 +59,12 @@ int main(int argc, char **argv) {
             goto end;
         }
 
+        if((output = fopen(outfile, "w")) == NULL) {
+            ret = 1;
+            fprintf(stderr, "Error opening '%s'\n", outfile);
+            goto end;
+        }
+
         if ((ret = init_sudo(&sudo, &N, input)) < 0)
             goto end;
 
@@ -71,10 +77,10 @@ int main(int argc, char **argv) {
 
         if ((ret = output_sudo(sudo, output)) < 0)
             goto end;
-        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
-        
-        if ((ret = output_sudo(sudo, stdout)) < 0)
-            goto end;
+        // fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
+        // 
+        // if ((ret = output_sudo(sudo, stdout)) < 0)
+        //     goto end;
     }
     
 end:
