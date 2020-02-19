@@ -14,15 +14,38 @@
 extern "C" {
 #endif /* __plusplus */
 
-extern void print_sudo      (uint8_t **, int);
 
-extern int  gen_sudo        (uint8_t **, int);
+/******************************************************************************/
+/*                                                                            */
+/* struct declaration                                                         */
+/*                                                                            */
+/******************************************************************************/
+
+struct status;
+typedef struct status Status;
+
+struct sudoku;
+typedef struct sudoku Sudoku;
+
+
+/******************************************************************************/
+/*                                                                            */
+/* function declaration                                                       */
+/*                                                                            */
+/******************************************************************************/
+
+
+extern int  init_sudo       (Sudoku **, int *, FILE *);
+
+extern int  free_sudo       (Sudoku **);
+
+extern int  output_sudo     (Sudoku *, FILE *);
+
+extern int  gen_sudo        (Sudoku *);
 
 extern int  dfs_gen         (uint8_t **, int, uint8_t, int);
 
-extern int  init_stat_tab   (uint8_t **, int **, int);
-
-extern int  solve_sudo      (uint8_t **, int);
+extern int  solve_sudo      (Sudoku *);
 
 #ifdef __cplusplus
 }
