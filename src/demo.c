@@ -16,19 +16,21 @@
 #include "sudoku.h"
 
 int main(int argc, char **argv) {
-    int N   = 9;
-    int ret = 0;
+    int N    = 9;
+    int mult = 0;
+    int cnt  = 0;
+    int ret  = 0;
     Sudoku *sudo    = NULL;
     FILE   *input   = NULL;
     FILE   *output  = NULL;
-    char   *infile  = "data/input.txt";
-    char   *outfile = "data/output.txt";
+    char   *infile  = (char*)"data/input.txt";
+    char   *outfile = (char*)"data/output.txt";
 
     if (argc > 2) {
         fprintf(stderr,
                 "Usage:\n"
-                "%s <N>     Generate N x N sudoku and write to '%s'\n"
-                "%s         Solve sudoku from '%s' and write result to '%s'\n",
+                "%s <N>     Generate N x N sudoku to '%s'\n"
+                "%s         Write solution of sudo from '%s' to '%s'\n",
                 argv[0], outfile, argv[0], infile, outfile);
         ret = 1;
         goto end;
@@ -46,12 +48,11 @@ int main(int argc, char **argv) {
             goto end;
         }
 
-        if ((ret = output_sudo(sudo, output)) < 0)
-            goto end;
-        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
+        output_sudo((sudo->data), (sudo->size), output);
         
-        if ((ret = output_sudo(sudo, stdout)) < 0)
-            goto end;
+        fprintf(stdout, "Generate %d x %d sudoku to '%s'\n", N, N, outfile);
+        
+        output_sudo(sudo->data, sudo->size, stdout);
     } else {
         if((input = fopen(infile, "r")) == NULL) {
             ret = 1;
@@ -67,20 +68,16 @@ int main(int argc, char **argv) {
 
         if ((ret = init_sudo(&sudo, &N, input)) < 0)
             goto end;
+        fprintf(stdout, "Read %d x %d sudoku from '%s'\n", N, N, infile);
 
-        fprintf(stdout, "Read %d x %d sudoku from '%s'\n\n", N, N, infile);
-        if ((ret = output_sudo(sudo, stdout)) < 0)
+        output_sudo(sudo->data, sudo->size, stdout);
+       
+        fprintf(stdout, "Try to find solution(s)\n");
+        if ((ret = solve_sudo(sudo, mult, output)) < 0)
             goto end;
         
-        if ((ret = solve_sudo(sudo)) < 0)
-            goto end;
-
-        if ((ret = output_sudo(sudo, output)) < 0)
-            goto end;
-        // fprintf(stdout, "Generate %d x %d sudoku to '%s'\n\n", N, N, outfile);
-        // 
-        // if ((ret = output_sudo(sudo, stdout)) < 0)
-        //     goto end;
+        cnt = ret;
+        fprintf(stdout, "Write %d solution(s) to '%s'\n", cnt, outfile);
     }
     
 end:

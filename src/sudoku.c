@@ -7,6 +7,7 @@
  * @update  [id] [yy-mm-dd] [author] [description] 
  */
 
+#include <stack>
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
@@ -35,18 +36,6 @@
 
 */
 
-static const int POSS[] =  {0,      /* 000000000 */
-                            1,      /* 000000001 */
-                            2,      /* 000000010 */
-                            4,      /* 000000100 */
-                            8,      /* 000001000 */
-                            16,     /* 000010000 */
-                            32,     /* 000100000 */
-                            64,     /* 001000000 */
-                            128,    /* 010000000 */
-                            256,    /* 100000000 */
-                            511};   /* 111111111 */
-
 
 /******************************************************************************/
 /*                                                                            */
@@ -55,12 +44,7 @@ static const int POSS[] =  {0,      /* 000000000 */
 /******************************************************************************/
 
 
-struct sudoku {
-    unsigned   size;         /* number of rows                               */
-    unsigned   nb_data;      /* number of cells that is not empty            */
-    int8_t   **data;         /* 2-D array to store numeric of every cell     */
-    uint64_t **stat;         /* 2-D array to store status of possibilities   */
-};
+std::stack<uint64_t> mstack;
 
 
 /******************************************************************************/
@@ -113,13 +97,16 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
         ret = -1;
         goto fail;
     }
-
+    
+    /* read size of sudoku */
     if (input) {
         if (fscanf(input, "%d", &N) == EOF) {
             fprintf(stderr, "Error reading input file\n");
             ret = -1;
             goto fail;
         }
+        n    = sqrt(N);
+        *N_p = N;
     }
 
     /* allocate and initialize 2-D array to store data */
@@ -128,7 +115,6 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
         ret = -1;
         goto fail;
     }
-    
     for (int i = 0; i < N; i++) {
         if ((data[i] = (int8_t *)malloc(sizeof(int8_t) * N)) == NULL) {
             fprintf(stderr, "Error allocating memory\n");
@@ -153,7 +139,6 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
         ret = -1;
         goto fail;
     }
-    
     for (int i = 0; i < N; i++) {
         if ((stat[i] = (uint64_t *)malloc(sizeof(uint64_t) * N)) == NULL) {
             fprintf(stderr, "Error allocating memory\n");
@@ -164,6 +149,7 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
             stat[i][j] = pow(2, N) - 1;
         }
     }
+
     sudo->stat = stat;
 
     /* read data from input file and set status table */
@@ -174,7 +160,9 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
                 ret = -1;
                 goto fail;
             }
-            data[i][j] = 0 - num;
+            data[i][j] = 0 - abs(num);
+
+            /* numeric of the current cell cannot be modified */
             if (data[i][j] < 0) {
                 sudo->nb_data++;
                 poss = (uint64_t)pow(2, num - 1);
@@ -196,8 +184,8 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
                 }
                 
                 /* remove the possibility from current n*n subsquares */
-                for (int x = i - (i % n); x < i - (i % n) + n; x++) {
-                    for (int y = j - (j % n); y < j - (j % n) + n; y++) {
+                for (int x = n * (i / n); x < n * (i / n) + n; x++) {
+                    for (int y = n * (j / n); y < n * (j / n) + n; y++) {
                         /* error: valid sudoku */
                         if ((x != i || y != j) && data[x][y] == data[i][j]) {
                             fprintf(stderr,
@@ -212,7 +200,6 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
             }
         }
     }
-
 
 fail:
     if (ret < 0) {
@@ -278,28 +265,35 @@ int free_sudo(Sudoku **sudo_pp) {
  * for a standard sudoku, whose number of rows is equal to its number
  * of columns, and is also equal to its number of subsquares.
  *
- * @param sudo   is a pointer to allocated Sudoku type data.
+ * @param data   is an allocated 2-D array contains of data of sudoku.
+ * @param N      is size of sudoku.
  * @param output is a pointer to FILE, as a standard output.
  *
  * @return 0 on success, otherwise negative number.
  *
  */
 
-int output_sudo(Sudoku *sudo, FILE *output) {
-    int  N      = sudo->size;
+// int output_sudo(Sudoku *sudo, FILE *output) {
+int output_sudo(int8_t **data, int N, FILE *output) {
+    // int  N      = sudo->size;
     int  n      = sqrt(N);
     int  nb_bit = 0;        /* number of bits of decimal of the N */
     char fmt[8] = {'\0'};
+    char FMT[8] = {'\0'};
     char str[8] = {'\0'};
-    int8_t **data = sudo->data;
+    // int8_t **data = sudo->data;
 
     if (!data) {
-        fprintf(stderr, "Data buffer of sudoku is empry\n");
+        fprintf(stderr, "Data table of sudoku is empty\n");
         return -1;
     }
 
+    if (!output)
+        return -1;
+
     for (int tmp = N; tmp; nb_bit++, tmp /= 10);
     snprintf(fmt, 4, "%%%du", nb_bit);
+    snprintf(FMT, 4, "%%%dc", nb_bit);
 
     for (int i = 0; i < N; i++) {
         if (i != 0 && i % n == 0) {
@@ -313,7 +307,11 @@ int output_sudo(Sudoku *sudo, FILE *output) {
         }
 
         for (int j = 0; j < N; j++) {
-            snprintf(str, 8, fmt, (unsigned)abs(data[i][j]));
+            if (data[i][j] == 0)
+                snprintf(str, 8, FMT, ' ');
+            else
+                snprintf(str, 8, fmt, (unsigned)abs(data[i][j]));
+
             if (j != 0 && j % n == 0) {
                 fprintf(output, " | %s", str);
             } else {
@@ -322,7 +320,7 @@ int output_sudo(Sudoku *sudo, FILE *output) {
         }
         fprintf(output, "\n");
     }
-
+    fprintf(output, "\n");
     return 0;
 }
 
@@ -337,13 +335,12 @@ int output_sudo(Sudoku *sudo, FILE *output) {
  */
 
 int gen_sudo(Sudoku *sudo) {
-    int     ret   = 0;
-    int     N     = sudo->size;
-    int8_t *q     = NULL; 
-    int8_t *que   = NULL; 
-    int8_t **data = sudo->data;
+    int     ret = 0;
+    int     N   = sudo->size;
+    int8_t *q   = NULL; 
+    int8_t *que = NULL; 
     
-    if (data == NULL) {
+    if (sudo->data == NULL) {
         fprintf(stderr, "Data buffer of sudoku is empry\n");
         return -1;
     }
@@ -369,7 +366,7 @@ int gen_sudo(Sudoku *sudo) {
     }
 
     for (int idx = 0; ret == 0 && idx < N; idx++) {
-        if (!dfs_gen(data, 0, que[idx], N)) {
+        if (!dfs_gen(sudo->data, 0, que[idx], N)) {
             fprintf(stderr, "Error generating sudoku\n");
             ret = -2;
         }
@@ -429,13 +426,136 @@ int dfs_gen(int8_t **data, int sub, int8_t numeric, int N) {
     return ret;
 }
 
-int solve_sudo(Sudoku *sudo) {
-    int        N    = sudo->size;
-    int        ret  = 0;
-    int8_t   **data = sudo->data;
-    uint64_t **stat = sudo->stat;
+/*
+ * solve a sudoku.
+ *
+ * @param sudo   is a pointer to allocated Sudoku type data,
+ *               both Sudoku::data and Sudoku::stat cannot be NULL.
+ * @param mult   means whether find all the solutions,
+ *               find 1 solution if mult is 0, otherwise find all.
+ * @param output is a pointer to FILE type data as the standard output,
+ *               which could be NULL.
+ *
+ * @return 0 on success, otherwise negative number.
+ *
+ */
 
-end:
+int solve_sudo(Sudoku *sudo, int mult, FILE *output) {
+    int cnt = 0; 
+    int N   = sudo->size;
+
+    if (!(sudo->data) || !(sudo->stat)) {
+        fprintf(stderr, "Data table or status table of sudoku is empty\n");
+        return -1;
+    }
+
+    if (sudo->nb_data < N * N) {
+        cnt = 0;
+        if (dfs_solve(0, &(sudo->nb_data), sudo->size, &cnt,
+                      mult, sudo->data, sudo->stat, output) == 0) {
+            fprintf(stderr, "No solution(s) found\n");
+            return -2;
+        }
+    }
+
+    return cnt;
+}
+
+/*
+ * solve sudoku using depth first search method.
+ *
+ * @param idx    is index in the sudoku (from 0 to N * N).
+ * @param nb     is number cells that is not empty.
+ * @param N      is size of sudoku.
+ * @param cnt    is pointer to a integer whose value will be number
+ *               of solutions.
+ * @param mult   is 0, find 1 solution, mult is 1, find all the solutions.
+ * @param data   is an allocated 2-d array which as data table.
+ * @param stat   is an allocated 2-d array which as status table.
+ * @param output is a pointer to FILE type data as the standard output,
+ *               which could be NULL.
+ *
+ * @return 1 on success, otherwise 0.
+ *
+ */
+
+int dfs_solve(int idx, unsigned *nb, int N, int *cnt,
+              int mult, int8_t **data, uint64_t **stat, FILE *output) {
+    int ret  = 0;
+    int flag = 0;
+    int n = sqrt(N);
+    int i = idx / N;
+    int j = idx % N;
+    uint64_t poss = 0; 
+
+    if (*nb == N * N) {
+        (*cnt)++;
+        output_sudo(data, N, output);
+        output_sudo(data, N, stdout);
+        return 1;
+    } else if (!data[i][j] && !stat[i][j]) {
+        return 0;
+    }
+
+    /* numeric of the current is certain (cannot be changed) */
+    if (data[i][j] < 0) {
+        return (dfs_solve(idx + 1, nb, N, cnt, mult, data, stat, output));
+    }
+
+    /* numeric of the current is not certain (colud be changed) */
+    for (int stat_idx = 0; stat_idx < N; stat_idx++) {
+        poss = pow(2, stat_idx);
+        if ((poss & stat[i][j]) == 0)
+            continue;
+        data[i][j] = stat_idx + 1;
+        (*nb)++;
+
+        /* save previous possibilities of some cells */
+        for (int k = N; k--; ) {
+            mstack.push(stat[i][k]);
+            mstack.push(stat[k][j]);
+        }
+        for (int x = n * (i / n); x < n * (i / n) + n; x++)
+            for (int y = n * (j / n); y < n * (j / n) + n; y++)
+                mstack.push(stat[x][y]);
+        
+        /* remove the possibility from the current row and column */
+        for (int k = N; k--; ) {
+            stat[i][k] &= (~poss);
+            stat[k][j] &= (~poss);
+        }
+        /* remove the possibility from the current n*n subsquares */
+        for (int x = n * (i / n); x < n * (i / n) + n; x++) {
+            for (int y = n * (j / n); y < n * (j / n) + n; y++) {
+                stat[x][y] &= (~poss);
+            }
+        }
+
+        if ((flag = dfs_solve(idx + 1, nb, N, cnt, mult,
+                              data, stat, output)) == 0 || mult) {
+            if (flag)
+                ret = 1;
+            data[i][j] = 0;
+            (*nb)--;
+
+            /* revert the possibility from the current n*n subsquares */
+            for (int x = n * (i / n) + n - 1; x >= n * (i / n); x--) {
+                for (int y = n * (j / n) + n - 1; y >= n * (j / n); y--) {
+                    stat[x][y] = mstack.top();
+                    mstack.pop();
+                }
+            }
+            /* revert the possibility from the current row and column */
+            for (int k = 0; k < N; k++) {
+                stat[k][j] = mstack.top();
+                mstack.pop();
+                stat[i][k] = mstack.top();
+                mstack.pop();
+            }
+        } else
+            return 1;
+    }
+
     return ret;
 }
 

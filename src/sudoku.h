@@ -17,11 +17,17 @@ extern "C" {
 
 /******************************************************************************/
 /*                                                                            */
-/* struct declaration                                                         */
+/* struct defination                                                          */
 /*                                                                            */
 /******************************************************************************/
 
-struct sudoku;
+struct sudoku {
+    unsigned   size;         /* number of rows                                */
+    unsigned   nb_data;      /* number of cells that is not empty             */
+    int8_t   **data;         /* 2-D array to store numeric of every cell      */
+    uint64_t **stat;         /* 2-D array to store status of possibilities    */
+};
+
 typedef struct sudoku Sudoku;
 
 
@@ -54,13 +60,16 @@ extern int  init_sudo       (Sudoku **, int *, FILE *);
 
 extern int  free_sudo       (Sudoku **);
 
-extern int  output_sudo     (Sudoku *, FILE *);
+extern int  output_sudo     (int8_t **, int, FILE *);
 
 extern int  gen_sudo        (Sudoku *);
 
 extern int  dfs_gen         (int8_t **, int, int8_t, int);
 
-extern int  solve_sudo      (Sudoku *);
+extern int  solve_sudo      (Sudoku *, int, FILE *);
+
+extern int  dfs_solve       (int, unsigned *, int, int *,
+                                  int, int8_t **, uint64_t **, FILE *);
 
 #ifdef __cplusplus
 }
