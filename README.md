@@ -9,9 +9,10 @@
 ├── bin
 │   └── demo
 ├── data
+│   ├── 4x4_err.txt
+│   ├── 4x4_mult.txt
 │   ├── input.txt
 │   └── output.txt
-├── run
 ├── img
 │   └── 64x64_sudoku_img.png
 ├── Makefile
@@ -19,6 +20,7 @@
 │   ├── demo.o
 │   └── sudoku.o
 ├── README.md
+├── run
 └── src
     ├── demo.c
     ├── sudoku.c
@@ -27,99 +29,161 @@
 
 ## Usage of Demo
 
+
+```shell
+$ ./run
+Usage:
+   ./run -g -n <Num> [-o <Outfile>]
+               Generate Num x Num sudoku to outfile
+
+   ./run -s [-i <Infile>] [-o <Outfile>] [-m]
+               Write solution of sudo from infile to outfile
+```
+
 ### Generate Sudoku
 
-Generate N x N randomly ordered sudoku by using `./demo <N>`, and make sure that the 'N' is **power of two**. (The result is also written in './data/output.txt'.)
+Generate `Num` x `Num` randomly ordered sudoku, and make sure that the `Num` is **valid**.
 
-**e.g.**
+**e.g.** The input filename could be default.
 
 ```shell
-$ ./run 4
+$ ./run -g -n 4
 Generate 4 x 4 sudoku to 'data/output.txt'
-
- 2 4 | 1 3
- 1 3 | 2 4
+ 1 2 | 4 3
+ 4 3 | 1 2
 -----+-----
- 4 2 | 3 1
- 3 1 | 4 2
+ 2 1 | 3 4
+ 3 4 | 2 1
+
 ```
+**e.g.** The input filename could be specified.
 
 ```shell
-$ ./run 9
-Generate 9 x 9 sudoku to 'data/output.txt'
-
- 5 4 9 | 8 2 7 | 1 6 3
- 1 6 3 | 5 4 9 | 8 2 7
- 8 2 7 | 1 6 3 | 5 4 9
--------+-------+-------
- 4 5 1 | 7 8 2 | 9 3 6
- 9 3 6 | 4 5 1 | 7 8 2
- 7 8 2 | 9 3 6 | 4 5 1
--------+-------+-------
- 6 9 5 | 2 7 8 | 3 1 4
- 3 1 4 | 6 9 5 | 2 7 8
- 2 7 8 | 3 1 4 | 6 9 5
-```
-
-```shell
-$ ./run 25
-Generate 25 x 25 sudoku to 'data/output.txt'
-
- 10 15  2 12 |  6 11 14  3 | 13  9 16  4 |  5  8  7  1
-  6 11 14  3 | 10 15  2 12 |  5  8  7  1 | 13  9 16  4
- 13  9 16  4 |  5  8  7  1 | 10 15  2 12 |  6 11 14  3
-  5  8  7  1 | 13  9 16  4 |  6 11 14  3 | 10 15  2 12
+$ ./run -g -n 16 -o out.md
+Generate 16 x 16 sudoku to 'out.md'
+  7 14  3  2 | 11  9  5  1 | 15 10 16  4 |  8 12  6 13
+ 11  9  5  1 |  7 14  3  2 |  8 12  6 13 | 15 10 16  4
+ 15 10 16  4 |  8 12  6 13 |  7 14  3  2 | 11  9  5  1
+  8 12  6 13 | 15 10 16  4 | 11  9  5  1 |  7 14  3  2
 -------------+-------------+-------------+-------------
- 15 10 12  2 | 11  6  3 14 |  9 13  4 16 |  8  5  1  7
- 11  6  3 14 | 15 10 12  2 |  8  5  1  7 |  9 13  4 16
-  9 13  4 16 |  8  5  1  7 | 15 10 12  2 | 11  6  3 14
-  8  5  1  7 |  9 13  4 16 | 11  6  3 14 | 15 10 12  2
+ 14  7  2  3 |  9 11  1  5 | 10 15  4 16 | 12  8 13  6
+  9 11  1  5 | 14  7  2  3 | 12  8 13  6 | 10 15  4 16
+ 10 15  4 16 | 12  8 13  6 | 14  7  2  3 |  9 11  1  5
+ 12  8 13  6 | 10 15  4 16 |  9 11  1  5 | 14  7  2  3
 -------------+-------------+-------------+-------------
-  2 12 10 15 | 14  3  6 11 | 16  4 13  9 |  7  1  5  8
- 14  3  6 11 |  2 12 10 15 |  7  1  5  8 | 16  4 13  9
- 16  4 13  9 |  7  1  5  8 |  2 12 10 15 | 14  3  6 11
-  7  1  5  8 | 16  4 13  9 | 14  3  6 11 |  2 12 10 15
+  3  2  7 14 |  5  1 11  9 | 16  4 15 10 |  6 13  8 12
+  5  1 11  9 |  3  2  7 14 |  6 13  8 12 | 16  4 15 10
+ 16  4 15 10 |  6 13  8 12 |  3  2  7 14 |  5  1 11  9
+  6 13  8 12 | 16  4 15 10 |  5  1 11  9 |  3  2  7 14
 -------------+-------------+-------------+-------------
- 12  2 15 10 |  3 14 11  6 |  4 16  9 13 |  1  7  8  5
-  3 14 11  6 | 12  2 15 10 |  1  7  8  5 |  4 16  9 13
-  4 16  9 13 |  1  7  8  5 | 12  2 15 10 |  3 14 11  6
-  1  7  8  5 |  4 16  9 13 |  3 14 11  6 | 12  2 15 10
+  2  3 14  7 |  1  5  9 11 |  4 16 10 15 | 13  6 12  8
+  1  5  9 11 |  2  3 14  7 | 13  6 12  8 |  4 16 10 15
+  4 16 10 15 | 13  6 12  8 |  2  3 14  7 |  1  5  9 11
+ 13  6 12  8 |  4 16 10 15 |  1  5  9 11 |  2  3 14  7
+
 ```
 
 ### Solve Sudoku
 
-Before solve `N` x `N` sudoku, make sure that your input data is in './data/input.txt'.
+Before solve `Num` x `Num` sudoku, make sure that your input data is in 'input file'.
 
-After executing the command, the result of solving sudoku is in './data/output.txt' if it is existed.
+After executing the command, the result of solving sudoku is in 'output file' if it is existed.
+
+**e.g.** Find only one solution.
 
 ```shell
-$ ./run
+$ ./run -s
 Read 9 x 9 sudoku from 'data/input.txt'
+       |     4 |      
+       |       |     4
+     4 |       |      
+-------+-------+-------
+ 5 2   |     7 | 8 9 1
+ 8 9 1 | 5 2   |     7
+ 4     | 8 9 1 | 5 2 3
+-------+-------+-------
+     2 |       | 9 3 5
+ 9 3 5 |     2 |      
+       | 9 3 5 |     2
 
- 5 4   | 8 2   | 1 6  
-       |   4   |     7
-   2 7 | 1   3 | 5 4 9
+Try to find solution(s)
+ 1 5 6 | 2 7 4 | 3 8 9
+ 2 7 9 | 3 6 8 | 1 5 4
+ 3 8 4 | 1 5 9 | 2 7 6
 -------+-------+-------
- 4   1 | 7   2 | 9 3  
-   3   |       | 7   2
- 7   2 | 9     | 4   1
+ 5 2 3 | 6 4 7 | 8 9 1
+ 8 9 1 | 5 2 3 | 4 6 7
+ 4 6 7 | 8 9 1 | 5 2 3
 -------+-------+-------
- 6   5 | 2   8 |     
-     4 |   9   | 2   
- 2 7   | 3   4 |   9 5
-Generate 9 x 9 sudoku to 'data/output.txt'
+ 7 1 2 | 4 8 6 | 9 3 5
+ 9 3 5 | 7 1 2 | 6 4 8
+ 6 4 8 | 9 3 5 | 7 1 2
 
- 5 4 9 | 8 2 7 | 1 6 3
- 1 6 3 | 5 4 9 | 8 2 7
- 8 2 7 | 1 6 3 | 5 4 9
--------+-------+-------
- 4 5 1 | 7 8 2 | 9 3 6
- 9 3 6 | 4 5 1 | 7 8 2
- 7 8 2 | 9 3 6 | 4 5 1
--------+-------+-------
- 6 9 5 | 2 7 8 | 3 1 4
- 3 1 4 | 6 9 5 | 2 7 8
- 2 7 8 | 3 1 4 | 6 9 5
+Write 1 solution(s) to 'data/output.txt'
+```
+**e.g.** Find All the solution(s).
+
+```shell
+$ ./run -s -m -i data/4x4_mult.txt -o out.txt
+Read 4 x 4 sudoku from 'data/4x4_mult.txt'
+   2 |   4
+   3 |    
+-----+-----
+     |    
+     |    
+
+Try to find solution(s)
+ 1 2 | 3 4
+ 4 3 | 1 2
+-----+-----
+ 2 1 | 4 3
+ 3 4 | 2 1
+
+ 1 2 | 3 4
+ 4 3 | 1 2
+-----+-----
+ 3 4 | 2 1
+ 2 1 | 4 3
+
+ 1 2 | 3 4
+ 4 3 | 2 1
+-----+-----
+ 2 1 | 4 3
+ 3 4 | 1 2
+
+ 1 2 | 3 4
+ 4 3 | 2 1
+-----+-----
+ 2 4 | 1 3
+ 3 1 | 4 2
+
+ 1 2 | 3 4
+ 4 3 | 2 1
+-----+-----
+ 3 1 | 4 2
+ 2 4 | 1 3
+
+ 1 2 | 3 4
+ 4 3 | 2 1
+-----+-----
+ 3 4 | 1 2
+ 2 1 | 4 3
+
+Write 6 solution(s) to 'out.txt'
+```
+**e.g.** No nolution(s).
+
+```shell
+$ ./run -s -m -i data/4x4_err.txt -o out.txt
+Read 4 x 4 sudoku from 'data/4x4_err.txt'
+   2 | 1 4
+     |   2
+-----+-----
+ 4 1 | 3  
+     |   1
+
+Try to find solution(s)
+No solution(s) found
 ```
 
 ---

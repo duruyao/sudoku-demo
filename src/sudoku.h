@@ -37,6 +37,9 @@ typedef struct sudoku Sudoku;
 /*                                                                            */
 /******************************************************************************/
 
+/*
+ * return number of one in a binary format of a data.
+ */
 
 #define NB_1(u) ({                                      \
     uint64_t _u_ = (uint64_t)(u);                       \

@@ -87,7 +87,7 @@ int init_sudo(Sudoku **sudo_pp, int *N_p, FILE *input) {
         if (i * i == N)
             valid = 1;
     if (!valid && !input) {
-        fprintf(stderr, "Invalid parameter (%d is not a power of 2)\n", N);
+        fprintf(stderr, "Invalid parameter (%d cannot be row of sukouk)\n", N);
         return -2;
     }
 
@@ -273,15 +273,12 @@ int free_sudo(Sudoku **sudo_pp) {
  *
  */
 
-// int output_sudo(Sudoku *sudo, FILE *output) {
 int output_sudo(int8_t **data, int N, FILE *output) {
-    // int  N      = sudo->size;
     int  n      = sqrt(N);
     int  nb_bit = 0;        /* number of bits of decimal of the N */
     char fmt[8] = {'\0'};
     char FMT[8] = {'\0'};
     char str[8] = {'\0'};
-    // int8_t **data = sudo->data;
 
     if (!data) {
         fprintf(stderr, "Data table of sudoku is empty\n");
@@ -483,9 +480,9 @@ int dfs_solve(int idx, unsigned *nb, int N, int *cnt,
               int mult, int8_t **data, uint64_t **stat, FILE *output) {
     int ret  = 0;
     int flag = 0;
-    int n = sqrt(N);
-    int i = idx / N;
-    int j = idx % N;
+    int n    = sqrt(N);
+    int i    = idx / N;
+    int j    = idx % N;
     uint64_t poss = 0; 
 
     if (*nb == N * N) {
