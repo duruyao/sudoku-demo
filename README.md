@@ -34,10 +34,10 @@
 $ ./run
 Usage:
    ./run -g -n <Num> [-o <Outfile>]
-               Generate Num x Num sudoku to outfile
+               Generate Num x Num sudoku to Outfile
 
    ./run -s [-i <Infile>] [-o <Outfile>] [-m]
-               Write solution of sudo from infile to outfile
+               Write solution of sudo from Infile to Outfile
 ```
 
 ### Generate Sudoku

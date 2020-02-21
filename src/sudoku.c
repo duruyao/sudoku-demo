@@ -430,6 +430,8 @@ int dfs_gen(int8_t **data, int sub, int8_t numeric, int N) {
  *               both Sudoku::data and Sudoku::stat cannot be NULL.
  * @param mult   means whether find all the solutions,
  *               find 1 solution if mult is 0, otherwise find all.
+ * @param cnt    is pointer to a integer whose value will be set as number
+ *               of solutions.
  * @param output is a pointer to FILE type data as the standard output,
  *               which could be NULL.
  *
@@ -437,9 +439,8 @@ int dfs_gen(int8_t **data, int sub, int8_t numeric, int N) {
  *
  */
 
-int solve_sudo(Sudoku *sudo, int mult, FILE *output) {
-    int cnt = 0; 
-    int N   = sudo->size;
+int solve_sudo(Sudoku *sudo, int mult, uint64_t *cnt, FILE *output) {
+    int N = sudo->size;
 
     if (!(sudo->data) || !(sudo->stat)) {
         fprintf(stderr, "Data table or status table of sudoku is empty\n");
@@ -447,15 +448,16 @@ int solve_sudo(Sudoku *sudo, int mult, FILE *output) {
     }
 
     if (sudo->nb_data < N * N) {
-        cnt = 0;
-        if (dfs_solve(0, &(sudo->nb_data), sudo->size, &cnt,
+        *cnt = 0; 
+        if (dfs_solve(0, &(sudo->nb_data), sudo->size, cnt,
                       mult, sudo->data, sudo->stat, output) == 0) {
             fprintf(stderr, "No solution(s) found\n");
             return -2;
         }
-    }
+    } else
+        *cnt = 1;
 
-    return cnt;
+    return 0;
 }
 
 /*
@@ -464,7 +466,7 @@ int solve_sudo(Sudoku *sudo, int mult, FILE *output) {
  * @param idx    is index in the sudoku (from 0 to N * N).
  * @param nb     is number cells that is not empty.
  * @param N      is size of sudoku.
- * @param cnt    is pointer to a integer whose value will be number
+ * @param cnt    is pointer to a integer whose value will be set as number
  *               of solutions.
  * @param mult   is 0, find 1 solution, mult is 1, find all the solutions.
  * @param data   is an allocated 2-d array which as data table.
@@ -476,14 +478,16 @@ int solve_sudo(Sudoku *sudo, int mult, FILE *output) {
  *
  */
 
-int dfs_solve(int idx, unsigned *nb, int N, int *cnt,
+int dfs_solve(int idx, unsigned *nb, int N, uint64_t *cnt,
               int mult, int8_t **data, uint64_t **stat, FILE *output) {
     int ret  = 0;
     int flag = 0;
     int n    = sqrt(N);
     int i    = idx / N;
     int j    = idx % N;
-    uint64_t poss = 0; 
+    uint64_t poss   = 0;
+    uint64_t stat_c = 0; /* copy of stat[i][j] */
+    uint64_t stat_o = 0; /* old copy of stat_c */
 
     if (*nb == N * N) {
         (*cnt)++;
@@ -492,21 +496,41 @@ int dfs_solve(int idx, unsigned *nb, int N, int *cnt,
         return 1;
     } else if (!data[i][j] && !stat[i][j]) {
         return 0;
-    }
-
-    /* numeric of the current is certain (cannot be changed) */
-    if (data[i][j] < 0) {
+    } else if (data[i][j] < 0) { /* the numeric is constant */
         return (dfs_solve(idx + 1, nb, N, cnt, mult, data, stat, output));
     }
+    
+    /* the numeric is not consant */
 
-    /* numeric of the current is not certain (colud be changed) */
-    for (int stat_idx = 0; stat_idx < N; stat_idx++) {
-        poss = pow(2, stat_idx);
-        if ((poss & stat[i][j]) == 0)
-            continue;
-        data[i][j] = stat_idx + 1;
+    // (1) is slower than (2)
+    // for (int stat_idx = 0; stat_idx < N; stat_idx++) {
+    //     poss = pow(2, stat_idx);
+    //     if ((poss & stat[i][j]) == 0)
+    //         continue;
+    // 
+    //     data[i][j] = stat_idx + 1;
+    //     (*nb)++;
+    
+    // (2) is slower than (3)
+    // tat_c = stat[i][j];
+    // for (int stat_idx = 0; stat_c; stat_idx++, stat_c >>= 1) {
+    //     if (!(stat_c & 1))
+    //         continue;
+    //     poss = pow(2, stat_idx);
+    //     data[i][j] = stat_idx + 1;
+    //     (*nb)++;
+    
+    // (3)
+    stat_c = stat[i][j];
+    stat_o = stat[i][j];
+    while (stat_c) {
+        stat_c  &= (stat_c - 1);
+        poss     = stat_o ^ stat_c;
+        stat_o   = stat_c;
+        /* LOG_2(p) is faster than log(p) / log(2) */
+        data[i][j] = LOG_2(poss) + 1;
         (*nb)++;
-
+    
         /* save previous possibilities of some cells */
         for (int k = N; k--; ) {
             mstack.push(stat[i][k]);

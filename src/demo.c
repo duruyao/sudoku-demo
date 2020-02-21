@@ -16,28 +16,32 @@
 
 #include "sudoku.h"
 
+char default_src[] = {"data/input.txt"};
+char default_dsc[] = {"data/output.txt"};
+
 int main(int argc, char **argv) {
     int   N       = 9;
     int   GEN     = 1;
     int   MULT    = 0;
-    char *INFILE  = (char*)"data/input.txt"; 
-    char *OUTFILE = (char*)"data/output.txt";
+    char *INFILE  = default_src; 
+    char *OUTFILE = default_dsc;
     
-    int opt = 0;
-    int cnt = 0;
-    int ret = 0;
+    int      opt = 0;
+    int      ret = 0;
+    uint64_t cnt = 0;
 
-    Sudoku *sudo   = NULL;
     FILE   *input  = NULL;
     FILE   *output = NULL;
+    Sudoku *sudo   = NULL;
 
     if (argc < 2 || argc > 7) {
         fprintf(stderr,
                 "Usage:\n"
                 "   %s -g -n <Num> [-o <Outfile>]\n"
-                "               Generate Num x Num sudoku to outfile\n\n"
+                "               Generate Num x Num sudoku to Outfile\n\n"
                 "   %s -s [-i <Infile>] [-o <Outfile>] [-m]\n"
-                "               Write solution of sudo from infile to outfile\n",
+                "               Write solution(s) of sudo from Infile to "
+                "Outfile\n",
                 argv[0], argv[0]);
         ret = 1;
         goto end;
@@ -105,17 +109,18 @@ int main(int argc, char **argv) {
         output_sudo(sudo->data, sudo->size, stdout);
        
         fprintf(stdout, "Try to find solution(s)\n");
-        if ((ret = solve_sudo(sudo, MULT, output)) < 0)
+        if ((ret = solve_sudo(sudo, MULT, &cnt, NULL)) < 0)
             goto end;
         
-        cnt = ret;
-        fprintf(stdout, "Write %d solution(s) to '%s'\n", cnt, OUTFILE);
+        fprintf(stdout,
+                "Write %" PRIu64 " solution(s) to '%s'\n", cnt, OUTFILE);
     }
     
 end:
     free_sudo(&sudo);
     if (input) fclose(input);
     if (output) fclose(output);
+
     return ret;
 }
 
